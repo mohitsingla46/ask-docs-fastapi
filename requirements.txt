@@ -7,3 +7,9 @@ google-auth
 google-auth-oauthlib
 python-jose[cryptography]
 passlib[bcrypt]
+langchain
+langchain-groq
+langchain-community
+langchain-pinecone
+pinecone-client
+langchain-nomic

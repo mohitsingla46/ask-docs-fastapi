@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     GOOGLE_CLIENT_ID: str
     JWT_SECRET: str
+    UPLOAD_DIR: str = "uploads"
+    NOMIC_API_KEY: str
+    NOMIC_EMBEDDING_MODEL: str
+    PINECONE_INDEX_NAME: str
+    PINECONE_API_KEY: str
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:

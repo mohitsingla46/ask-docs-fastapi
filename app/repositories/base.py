@@ -50,9 +50,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         update_result = await self.collection.update_one(
             {"_id": ObjectId(id)}, {"$set": obj_data}
         )
-        if update_result.modified_count > 0:
-            return await self.get(id)
-        return None
+        return await self.get(id)
 
     async def remove(self, id: str) -> bool:
         result = await self.collection.delete_one({"_id": ObjectId(id)})
