@@ -24,5 +24,9 @@ def model():
     return ChatGroq(
         api_key=settings.GROQ_API_KEY,
         model=settings.GROQ_CHAT_MODEL,
-        temperature=settings.GROQ_TEMPERATURE
+        temperature=settings.GROQ_TEMPERATURE,
+        # Limit max tokens to prevent context overflow
+        max_tokens=2048,
+        # Reduce timeout for faster failure detection
+        timeout=60
     )

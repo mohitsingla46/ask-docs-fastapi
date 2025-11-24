@@ -23,3 +23,10 @@ class AgentRepository(BaseRepository[Chat, ChatCreate, ChatCreate]):
             updated_at=datetime.utcnow().isoformat()
         )
         return await self.create(chat_data)
+    
+    async def delete_chats_by_thread(self, user_id: str, thread_id: str) -> int:
+        """Delete all chats for a specific user and thread."""
+        result = await self.collection.delete_many(
+            {"user_id": user_id, "thread_id": thread_id}
+        )
+        return result.deleted_count

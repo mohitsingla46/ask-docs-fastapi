@@ -1,5 +1,4 @@
 from langgraph.graph import StateGraph, START, END
-from langgraph.checkpoint.memory import MemorySaver
 from .utils.state import AgentState
 from .utils.nodes import guardrail, llm_call, tool_node, should_continue
 
@@ -23,5 +22,4 @@ builder = StateGraph(AgentState) \
     .add_conditional_edges("llm_call", should_continue, ["tool_node", END]) \
     .add_edge("tool_node", "llm_call")
 
-checkpointer = MemorySaver()
-agent = builder.compile(checkpointer=checkpointer)
+agent = builder.compile()

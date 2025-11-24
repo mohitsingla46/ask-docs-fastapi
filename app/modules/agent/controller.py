@@ -19,3 +19,27 @@ async def chat_with_agent(
         message=payload.message
     )
     return {"chat": chat}
+
+@router.get("/chat/{thread_id}")
+async def get_chat_history(
+    thread_id: str,
+    current_user: User = Depends(get_current_user),
+    agent_service: AgentService  = Depends(deps.get_agent_service)
+):
+    history = await agent_service.get_chat_history(
+        user_id=current_user.id,
+        thread_id=thread_id
+    )
+    return {"history": history}
+
+@router.delete("/chat/{thread_id}")
+async def delete_chat_history(
+    thread_id: str,
+    current_user: User = Depends(get_current_user),
+    agent_service: AgentService  = Depends(deps.get_agent_service)
+):
+    await agent_service.delete_chat_history(
+        user_id=current_user.id,
+        thread_id=thread_id
+    )
+    return {"detail": "Chat history deleted"}

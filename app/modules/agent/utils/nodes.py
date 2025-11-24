@@ -1,4 +1,4 @@
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage, trim_messages
 from langgraph.graph import END
 from .state import AgentState
 from .tools import tools_by_name, model_with_tools
@@ -34,6 +34,20 @@ async def guardrail(state: AgentState):
 async def llm_call(state: AgentState):
     print(f"LLM Call - Messages count: {len(state['messages'])}")
     user_id = state.get("user_id", "")
+    
+    # Trim messages to prevent context overflow (keep last 10 messages)
+    # This prevents the model from generating malformed tool calls due to context length
+    trimmed_messages = trim_messages(
+        state["messages"],
+        max_tokens=4000,
+        strategy="last",
+        token_counter=len,  # Simple token counter (you can use a more sophisticated one)
+        include_system=False,
+        allow_partial=False
+    )
+    
+    print(f"LLM Call - Trimmed messages count: {len(trimmed_messages)}")
+    
     response = await model_with_tools.ainvoke(
         [
             SystemMessage(
@@ -46,7 +60,7 @@ async def llm_call(state: AgentState):
             Be concise and accurate.
             """
             ),
-            *state["messages"],
+            *trimmed_messages,
         ]
     )
     print(f"LLM Response - Has tool calls: {bool(response.tool_calls)}")
