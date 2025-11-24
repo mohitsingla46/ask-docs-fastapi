@@ -13,9 +13,13 @@ class Settings(BaseSettings):
     JWT_SECRET: str
     UPLOAD_DIR: str = "uploads"
     NOMIC_API_KEY: str
-    NOMIC_EMBEDDING_MODEL: str
+    EMBEDDING_MODEL: str
     PINECONE_INDEX_NAME: str
     PINECONE_API_KEY: str
+    GROQ_API_KEY: str
+    GROQ_CHAT_MODEL: str
+    GROQ_TEMPERATURE: float
+    GOOGLE_API_KEY: str
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:

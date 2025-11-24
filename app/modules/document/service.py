@@ -4,7 +4,7 @@ from app.modules.document.schemas import Document, DocumentCreate
 import os
 from app.core.config import settings
 import shutil
-from app.modules.document.ingestion import process_document
+from app.modules.document.ingestion import process_document, clear_user_vectors
 
 class DocumentService:
     def __init__(self, document_repository: DocumentRepository):
@@ -57,4 +57,16 @@ class DocumentService:
         if not document:
             return None
         return document
+    
+    async def delete_document(self, user_id: str) -> None:
+        document = await self.document_repository.get_by_user_id(user_id)
+        if document:
+            print(f"Deleting document at path: {document.id}")
+            if os.path.exists(document.path):
+                os.remove(document.path)
+            await self.document_repository.delete(document.id)
+            try:
+                clear_user_vectors(user_id)
+            except Exception as e:
+                print(f"Error clearing user vectors: {e}")
 

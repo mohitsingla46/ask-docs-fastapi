@@ -13,3 +13,5 @@ langchain-community
 langchain-pinecone
 pinecone-client
 langchain-nomic
+langgraph
+langchain-google-genai

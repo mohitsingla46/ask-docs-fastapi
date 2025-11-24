@@ -7,20 +7,27 @@ from app.modules.auth.schemas import User
 
 router = APIRouter()
 
-@router.post('/upload', response_model=schemas.Document)
+@router.post('/upload')
 async def upload_document(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     document_service: DocumentService  = Depends(deps.get_document_service)
 ):
-    return await document_service.upload_document(file, current_user.id)
+    document = await document_service.upload_document(file, current_user.id)
+    return {"document": document}
 
-@router.get('/fetch', response_model=schemas.Document)
+@router.get('/fetch')
 async def get_document(
     current_user: User = Depends(get_current_user),
     document_service: DocumentService = Depends(deps.get_document_service)
 ):
     document = await document_service.get_document(current_user.id)
-    if document is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
-    return document
+    return {"document": document}
+
+@router.delete('/delete', status_code=status.HTTP_204_NO_CONTENT)
+async def delete_document(
+    current_user: User = Depends(get_current_user),
+    document_service: DocumentService = Depends(deps.get_document_service)
+):
+    await document_service.delete_document(current_user.id)
+    return None
