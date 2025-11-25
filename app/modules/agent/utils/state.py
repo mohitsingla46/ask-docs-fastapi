@@ -8,3 +8,4 @@ class AgentState(TypedDict):
     user_id: str
     plan: list[str]
     reasoning_trace: list[str]
+    guardrail_verdict: str
