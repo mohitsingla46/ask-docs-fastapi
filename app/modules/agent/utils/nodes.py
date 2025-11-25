@@ -3,6 +3,9 @@ from langgraph.graph import END
 from .state import AgentState
 from .tools import tools_by_name, model_with_tools
 from app.core.agent import model
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from pydantic import BaseModel, Field
+from typing import List
 
 
 async def guardrail(state: AgentState):
@@ -31,6 +34,82 @@ async def guardrail(state: AgentState):
     return state
 
 
+class Plan(BaseModel):
+    """Plan to follow."""
+    steps: List[str] = Field(description="different steps to follow, should be in sorted order")
+
+async def planner(state: AgentState):
+    print("---PLANNER---")
+    messages = state["messages"]
+    user_id = state.get("user_id", "")
+    
+    # If a plan already exists, we might want to skip or re-plan. 
+    # For now, let's only plan if no plan exists.
+    if state.get("plan"):
+        return {"plan": state["plan"], "user_id": user_id}
+
+    planner_prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "For the given objective, come up with a simple step by step plan. "
+                "This plan should involve individual tasks, that if executed correctly will yield the correct answer. "
+                "Do not add any superfluous steps. "
+                "The result of the final step should be the final answer. "
+                "Make sure that each step has all the information needed - do not skip steps."
+            ),
+            ("placeholder", "{messages}"),
+        ]
+    )
+    
+    planner_model = model().with_structured_output(Plan)
+    planner_chain = planner_prompt | planner_model
+    
+    plan = await planner_chain.ainvoke({"messages": messages})
+    print(f"Generated Plan: {plan.steps}")
+    
+    return {"plan": plan.steps, "user_id": user_id}
+
+
+class Reasoning(BaseModel):
+    """Reasoning for the next step."""
+    reasoning: str = Field(description="Reasoning for what to do next")
+    next_step: str = Field(description="The next immediate step to take")
+
+async def reasoning(state: AgentState):
+    print("---REASONING---")
+    messages = state["messages"]
+    plan = state.get("plan", [])
+    user_id = state.get("user_id", "")
+    
+    reasoning_prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "You are an expert assistant. "
+                "Your goal is to determine the next immediate step based on the current plan and conversation history. "
+                "Current Plan:\n{plan}\n\n"
+                "Analyze the conversation history to see what steps have been completed. "
+                "Decide what needs to be done next. "
+                "Provide your reasoning and the specific next step."
+            ),
+            ("placeholder", "{messages}"),
+        ]
+    )
+    
+    reasoning_model = model().with_structured_output(Reasoning)
+    reasoning_chain = reasoning_prompt | reasoning_model
+    
+    response = await reasoning_chain.ainvoke({"messages": messages, "plan": "\n".join(f"- {s}" for s in plan)})
+    print(f"Reasoning: {response.reasoning}")
+    print(f"Next Step: {response.next_step}")
+    
+    return {
+        "reasoning_trace": state.get("reasoning_trace", []) + [f"Reasoning: {response.reasoning}\nNext Step: {response.next_step}"],
+        "user_id": user_id
+    }
+
+
 async def llm_call(state: AgentState):
     print(f"LLM Call - Messages count: {len(state['messages'])}")
     user_id = state.get("user_id", "")
@@ -48,18 +127,30 @@ async def llm_call(state: AgentState):
     
     print(f"LLM Call - Trimmed messages count: {len(trimmed_messages)}")
     
+    
+    # Inject plan and reasoning into system prompt
+    plan_str = "\n".join(f"- {s}" for s in state.get("plan", []))
+    reasoning_trace_str = "\n".join(state.get("reasoning_trace", [])[-1:]) # Only show last reasoning
+    
+    system_prompt = f"""
+    You are a helpful AI assistant that primarily answers questions based on the uploaded document.
+    
+    Current Plan:
+    {plan_str}
+    
+    Current Reasoning/Next Step:
+    {reasoning_trace_str}
+    
+    For greetings, acknowledgments, or polite phrases (e.g., hello, thank you), respond appropriately.
+    For any other unrelated questions or requests, respond with "I can only answer questions about the uploaded document."
+    If the question requires information from the document, use the search_documents tool to retrieve relevant information before answering.
+    If no relevant content is found in the retrieved context, say "I don't know based on the provided document."
+    Be concise and accurate.
+    """
+
     response = await model_with_tools.ainvoke(
         [
-            SystemMessage(
-                content="""
-            You are a helpful AI assistant that primarily answers questions based on the uploaded document.
-            For greetings, acknowledgments, or polite phrases (e.g., hello, thank you), respond appropriately.
-            For any other unrelated questions or requests, respond with "I can only answer questions about the uploaded document."
-            If the question requires information from the document, use the search_documents tool to retrieve relevant information before answering.
-            If no relevant content is found in the retrieved context, say "I don't know based on the provided document."
-            Be concise and accurate.
-            """
-            ),
+            SystemMessage(content=system_prompt),
             *trimmed_messages,
         ]
     )
