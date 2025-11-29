@@ -3,7 +3,9 @@ from langchain_pinecone import PineconeVectorStore
 from app.core.config import settings
 from langchain_groq import ChatGroq
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langsmith import traceable
 
+@traceable(run_type="embedding", name="Get Embeddings")
 def get_embeddings():
     """Get Google embeddings instance."""
     return GoogleGenerativeAIEmbeddings(
@@ -11,6 +13,7 @@ def get_embeddings():
         model=settings.EMBEDDING_MODEL
     )
 
+@traceable(run_type="retriever", name="Get Vector Store")
 def get_vector_store(namespace: str = None):
     """Get Pinecone vector store instance."""
     return PineconeVectorStore(

@@ -16,3 +16,4 @@ langchain-nomic
 langgraph
 langchain-google-genai
 python-multipart
+langsmith

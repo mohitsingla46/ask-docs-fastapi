@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings
 from pydantic import field_validator
-from typing import List, Union
+from typing import List, Union, Optional
 
 
 class Settings(BaseSettings):
@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     GROQ_CHAT_MODEL: str
     GROQ_TEMPERATURE: float
     GOOGLE_API_KEY: str
+    LANGSMITH_TRACING: str
+    LANGSMITH_API_KEY: str
+    LANGSMITH_ENDPOINT: str
+    LANGSMITH_PROJECT: str
+    LANGCHAIN_CALLBACKS_BACKGROUND: str
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:

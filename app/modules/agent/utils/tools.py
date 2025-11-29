@@ -1,8 +1,10 @@
 from langchain.tools import tool
 from app.core.agent import get_vector_store
 from app.core.agent import model
+from langsmith import traceable
 
 @tool
+@traceable(run_type="tool", name="Search Documents")
 def search_documents(query: str, user_id: str) -> str:
     """Search documents for relevant information based on the query."""
     try:
